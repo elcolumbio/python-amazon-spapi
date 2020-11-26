@@ -6,7 +6,7 @@ import requests
 class Setup(BaseSettings):
     """Everything which is not part of the actual API request we put here."""
     # Objects we use in our main api calls.
-    access_token: str = ''
+    access_token: str = None
     access_key: str = None
     secret_key: str = None
     session_token: str = None

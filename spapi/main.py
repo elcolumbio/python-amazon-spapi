@@ -1,14 +1,32 @@
 import hashlib
 import hmac
-
 import datetime
+from pydantic import BaseModel, Field
 import requests
+
+
+class CredentialSetup(BaseModel):
+    """Interface Model with all credentials set."""
+    access_token: str = Field(
+        description='Can be set with setupapi.setter_access_token()')
+    access_key: str = Field(
+        description='Can be set with setupapi.setter_sts_creds()')
+    secret_key: str = Field(
+        description='Can be set with setupapi.setter_sts_creds()')
+    session_token: str = Field(
+        description='Can be set with setupapi.setter_sts_creds()')
+
+    endpoint: str
+    region: str
 
 
 class SPAPI():
     def __init__(
-        self, setup, path, http_verb='GET', querystring=None, payload=''
+        self, setup, path, http_verb='GET', querystring='', payload=''
     ):
+        validate = CredentialSetup
+        validate(**setup.dict())
+
         self.setup = setup
         self.path: str = path  # todo fix naming
 
@@ -17,19 +35,15 @@ class SPAPI():
         # api
         self.http_verb: str = http_verb
         self.host: str = setup.endpoint.split('https://')[-1]
-        self.querystring: str = ''
         self.payload = payload
-
-        self.service = 'execute-api'
 
         self.canonical_headers = f'host:{self.host}\nx-amz-date:{self.amzdate}\n'
         self.canonical_request = None
-        self.canonical_querystring = ''
+        self.canonical_querystring: str = querystring
 
+        self.service = 'execute-api'
         self.signed_headers = 'host;x-amz-date'
-
         self.algorithm = 'AWS4-HMAC-SHA256'
-
         self.credential_scope = (f'{self.datestamp}/{self.setup.region}'
                                  f'/{self.service}/aws4_request')
 
@@ -45,8 +59,8 @@ class SPAPI():
         return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()
 
     def getSignatureKey(self):
-        kDate = self.sign(('AWS4' + self.setup.secret_key).encode('utf-8'),
-                           self.datestamp)
+        kDate = self.sign((
+            'AWS4' + self.setup.secret_key).encode('utf-8'), self.datestamp)
         kRegion = self.sign(kDate, self.setup.region)
         kService = self.sign(kRegion, self.service)
         kSigning = self.sign(kService, 'aws4_request')
@@ -73,9 +87,13 @@ class SPAPI():
     def create_string_to_sign(self):
         hashed_request = hashlib.sha256(self.canonical_request.encode(
             'utf-8')).hexdigest()
-        self.string_to_sign = (
-            f'{self.algorithm}\n{self.amzdate}\n{self.credential_scope}\n'
-            f'{hashed_request}')
+        string_to_sign_components = [
+            self.algorithm,
+            self.amzdate,
+            self.credential_scope,
+            hashed_request
+        ]
+        self.string_to_sign = '\n'.join(string_to_sign_components)
 
         signing_key = self.getSignatureKey()
 
