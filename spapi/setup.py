@@ -5,18 +5,13 @@ import requests
 
 class Setup(BaseSettings):
     """Everything which is not part of the actual API request we put here."""
-    # Objects we use in our main api calls.
+    # Output see in model CredentialSetup in main.py
     access_token: str = None
     access_key: str = None
     secret_key: str = None
     session_token: str = None
 
-    # the full json response
-    _sts_creds: dict = dict()
-    _access_token: dict = dict()
-
-    # Settings Data
-    # Fields we provide in e.g. .env files
+    # Settings Data, we have an example file .sellerpartnerapi.env
     # IAM auth
     role_arn: str
     role_session_name: str
@@ -30,7 +25,7 @@ class Setup(BaseSettings):
     # data for api call
     endpoint: str
     region: str
-    app_name: str  # 'my 0.1 (Language=Python/3.8; Platform=Ubuntu/20.4)'
+    app_name: str
 
     class Config:
         """
@@ -40,18 +35,19 @@ class Setup(BaseSettings):
         env_file = '~/.sellerpartnerapi.env'
         underscore_attrs_are_private = True
 
-    def setter_access_token(self) -> str:
+    def get_access_token(self, params) -> dict:
+        lwa_login = 'https://api.amazon.com/auth/o2/token'
+        return requests.post(lwa_login, data=params).json()
+
+    def setter_access_token(self) -> dict:
         """Token you pass to every api request, is valid for 1 hour."""
         # so far the only unsigned request
-        lwa_login = 'https://api.amazon.com/auth/o2/token'
         params = {'grant_type': 'refresh_token',
                   'refresh_token': self.refresh_token,
                   'client_id': self.client, 'client_secret': self.secret}
-        response = requests.post(lwa_login, data=params).json()
-        access_token = response['access_token']
-        self._access_token = response  # full json response
-        self.access_token = access_token
-        return access_token
+        response = self.get_access_token(params)
+        self.access_token = response['access_token']
+        return response
 
     def setter_sts_creds(self) -> dict:
         """Temporal sts creds from your iam role."""

@@ -25,10 +25,10 @@ class SPAPI():
         self, setup, path, http_verb='GET', querystring='', payload=''
     ):
         validate = CredentialSetup
-        validate(**setup.dict())
+        validate(**setup.dict())  # We expect the credentials to be set.
 
         self.setup = setup
-        self.path: str = path  # todo fix naming
+        self.path: str = path
 
         self.set_datestrings()
 
@@ -54,7 +54,7 @@ class SPAPI():
         self.datestamp = t.strftime('%Y%m%d')
 
     def sign(self, key, msg):
-        """Link how to sign requests: http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python ."""
+        # https://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html
 
         return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()
 
@@ -103,9 +103,6 @@ class SPAPI():
         return signature
 
     def add_signing_to_request(self):
-        # The signing information can be either in a query string value or in
-        # a header named Authorization. This code shows how to use a header.
-        # Create authorization header and add to request headers
         signature = self.create_string_to_sign()
         authorization_header = (
             f'{self.algorithm} '
@@ -122,14 +119,7 @@ class SPAPI():
         headers = self.add_signing_to_request()
         request_url = (
             self.setup.endpoint + self.path + self.canonical_querystring)
-
-        print('\nBEGIN REQUEST++++++++++++++++++++++++++++++++++++')
-        print('Request URL = ' + request_url)
         r = requests.get(request_url, headers=headers)
-
-        print('\nRESPONSE++++++++++++++++++++++++++++++++++++')
-        print('Response code: %d\n' % r.status_code)
-        print(r.text)
         return r
 
     def main(self):
