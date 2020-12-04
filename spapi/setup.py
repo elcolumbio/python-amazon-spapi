@@ -3,6 +3,11 @@ from pydantic import BaseSettings
 import requests
 
 
+class AccesTokenRequest(BaseSettings):
+    """Model for data we need to request access token."""
+    pass
+
+
 class Setup(BaseSettings):
     """Everything which is not part of the actual API request we put here."""
     # Output see in model CredentialSetup in main.py
@@ -36,17 +41,29 @@ class Setup(BaseSettings):
         underscore_attrs_are_private = True
 
     def get_access_token(self, params) -> dict:
+        """Exchange your refresh token into an access token."""
         lwa_login = 'https://api.amazon.com/auth/o2/token'
         return requests.post(lwa_login, data=params).json()
 
-    def setter_access_token(self) -> dict:
+    def prepare_access_token(self, params) -> dict:
+        """Useful for testing and returning a prepared request token."""
+        lwa_login = 'https://api.amazon.com/auth/o2/token'
+        req = requests.Request(method='PUT', url=lwa_login, data=params)
+        return req
+
+    def setter_access_token(self, test=False) -> dict:
         """Token you pass to every api request, is valid for 1 hour."""
         # so far the only unsigned request
         params = {'grant_type': 'refresh_token',
                   'refresh_token': self.refresh_token,
-                  'client_id': self.client, 'client_secret': self.secret}
-        response = self.get_access_token(params)
-        self.access_token = response['access_token']
+                  'client_id': self.client,
+                  'client_secret': self.secret}
+        if not test:  # make the actual request
+            response = self.get_access_token(params)
+            self.access_token = response['access_token']
+
+        else:  # for testing
+            response = self.prepare_access_token(params)
         return response
 
     def setter_sts_creds(self) -> dict:
