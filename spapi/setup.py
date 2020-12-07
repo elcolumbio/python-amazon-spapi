@@ -28,8 +28,6 @@ class AccessTokenRequest(BaseModel):
     except ValidationError:
         params: AccessTokenParams
 
-    def 
-
     def get_access_token(self) -> dict:
         """Exchange your refresh token into an access token."""
         return requests.post(self.url, data=self.params.dict()).json()
