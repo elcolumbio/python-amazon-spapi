@@ -13,17 +13,12 @@ def test_invalid_params():
 
 def test_required_params():
     """Validation and completeness of params without model."""
-    # everything which pydantic can cast to a string
-    setup.Setup(
-        role_arn=44.44,  # we have to introduce more rules
-        role_session_name='',
-        client='',
-        secret='',
-        refresh_token='',
-        endpoint='',
-        region='',
-        app_name=''
-    )
+    setup.AccesTokenRequest(params={
+        'grant_type': 'refresh_token',
+        'refresh_token': 'example',
+        'client_id': 'example',
+        'client_secret': 'example'
+    })
 
 
 def test_required_params_bymodel(setup_data_model):
