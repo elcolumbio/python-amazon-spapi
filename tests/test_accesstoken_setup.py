@@ -1,12 +1,27 @@
+"""We focus on testing and showing some of the ways you can use pydantic."""
 import pytest
 from pathlib import Path
 from pydantic import ValidationError
 from spapi import setup
 
 
-def test_env_file_params():
+def test_params_env_file():
     """Test the env file without moving it."""
     setup.AccessTokenParams(_env_file=Path('./.sellerpartnerapi.env'))
+
+
+def test_missing_params_env_file():
+    """Test the env file without moving it."""
+    with pytest.raises(ValidationError):
+        setup.AccessTokenParams(_env_file=Path(
+            './tests/data/.invalid_sellerpartnerapi.env'))
+
+
+def test_fix_missing_params_env_file():
+    """Test the env file without moving it."""
+    setup.AccessTokenParams(
+        client_id='example_id',
+        _env_file=Path('./tests/data/.invalid_sellerpartnerapi.env'))
 
 
 def test_invalid_params():
@@ -16,8 +31,7 @@ def test_invalid_params():
             'grant_type': 'refresh_token',
             'refresh_token': 'example1',
             'client_id': 'example2',
-            'client_secret': None
-        })
+            'client_secret': None})
 
 
 def test_required_params_dict():
@@ -27,8 +41,7 @@ def test_required_params_dict():
         'grant_type': 'refresh_token',
         'refresh_token': 'example1',
         'client_id': 'example2',
-        'client_secret': 'example3'
-    })
+        'client_secret': 'example3'})
 
 
 def test_required_params_bymodel():
