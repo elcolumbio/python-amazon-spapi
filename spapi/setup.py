@@ -1,6 +1,6 @@
 """Structured setup to get all your tokens."""
 import boto3
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseModel, BaseSettings, ValidationError
 import requests
 
 
@@ -23,7 +23,12 @@ class AccessTokenParams(BaseSettings):
 class AccessTokenRequest(BaseModel):
     """Model for data we need to request access token."""
     url = 'https://api.amazon.com/auth/o2/token'
-    params: AccessTokenParams = AccessTokenParams()
+    try:  # if you change local files you have to reimport
+        params: AccessTokenParams = AccessTokenParams()
+    except ValidationError:
+        params: AccessTokenParams
+
+    def 
 
     def get_access_token(self) -> dict:
         """Exchange your refresh token into an access token."""
@@ -41,7 +46,7 @@ class AccessTokenRequest(BaseModel):
 
 
 class StsTokenRequest(BaseSettings):
-    """IAM Authenfication with Amazon STS."""
+    """IAM Authentification with Amazon STS."""
     role_arn: str
     role_session_name: str
 
