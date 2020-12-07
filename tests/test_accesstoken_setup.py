@@ -20,7 +20,7 @@ def test_invalid_params():
         })
 
 
-def test_required_params():
+def test_required_params_dict():
     """Validation and completeness of params with overwriting."""
     # not recommended to do in production
     setup.AccessTokenRequest(params={
@@ -41,7 +41,7 @@ def test_required_params_bymodel():
     setup.AccessTokenRequest(params=params)
 
 
-def test_request_access_token():
+def test_request_access_token_bymodel():
     """Simple API call to exchange refresh token."""
     expected = (
         'refresh_token=example1'
@@ -56,3 +56,13 @@ def test_request_access_token():
     token_request = setupapi.prepare_access_token_request()
     prepared_request = token_request.prepare()  # requests prepare() function
     assert prepared_request.body == expected
+
+
+def test_prepare_access_token_request():
+    params = setup.AccessTokenParams(_env_file=Path(
+        './.sellerpartnerapi.env'))
+    setupapi = setup.AccessTokenRequest(params=params)
+    token_request = setupapi.prepare_access_token_request()
+    prepared_request = token_request.prepare()
+    assert prepared_request.body
+    assert prepared_request.url == 'https://api.amazon.com/auth/o2/token'
