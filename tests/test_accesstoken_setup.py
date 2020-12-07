@@ -1,6 +1,12 @@
 import pytest
+from pathlib import Path
 from pydantic import ValidationError
 from spapi import setup
+
+
+def test_env_file_params():
+    """Test the env file without moving it."""
+    setup.AccessTokenParams(_env_file=Path('./.sellerpartnerapi.env'))
 
 
 def test_invalid_params():

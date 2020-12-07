@@ -1,5 +1,6 @@
 """Structured setup to get all your tokens."""
 import boto3
+from pathlib import Path
 from pydantic import BaseModel, BaseSettings, ValidationError
 import requests
 
@@ -16,7 +17,7 @@ class AccessTokenParams(BaseSettings):
         Alternative locations for your configs.
         See in docs: https://pydantic-docs.helpmanual.io/usage/settings/
         """
-        env_file = '~/.sellerpartnerapi.env'
+        env_file = Path('~/.sellerpartnerapi.env')
         underscore_attrs_are_private = True
 
 
@@ -53,7 +54,7 @@ class StsTokenRequest(BaseSettings):
         Alternative locations for your configs.
         See in docs: https://pydantic-docs.helpmanual.io/usage/settings/
         """
-        env_file = '~/.sellerpartnerapi.env'
+        env_file = Path('~/.sellerpartnerapi.env')
         underscore_attrs_are_private = True
 
     def get_sts_creds(self) -> dict:
