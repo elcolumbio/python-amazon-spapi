@@ -8,21 +8,22 @@ from spapi import setup
 
 class SPAPI:
     def __init__(
-        self, access_token, stscreds, path, http_verb='GET',
-        querystring='', payload='', region=None
+        self, access_token: str, stscreds: dict, path: str,
+        http_verb: str = 'GET', querystring: str = '',
+        payload: str = '', region: str = None
     ):
-        self.access_token: str = access_token
-        self.stscreds: dict = stscreds
+        self.access_token = access_token
+        self.stscreds = stscreds
 
-        self.region: str = setup.Endpoints[region].value[1]
-        self.endpoint: str = setup.Endpoints[region].value[0]
+        self.region: str = setup.Endpoints[region.lower()].value[1]
+        self.endpoint: str = setup.Endpoints[region.lower()].value[0]
 
-        self.path: str = path
+        self.path = path
 
         self.set_datestrings()
 
         # api
-        self.http_verb: str = http_verb
+        self.http_verb = http_verb
         self.host: str = self.endpoint.split('https://')[-1]
         self.payload = payload
 
@@ -43,7 +44,7 @@ class SPAPI:
         self.amzdate = t.strftime('%Y%m%dT%H%M%SZ')
         self.datestamp = t.strftime('%Y%m%d')
 
-    def sign(self, key, msg):
+    def sign(self, key, msg) -> str:
         # https://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html
 
         return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()
@@ -61,7 +62,7 @@ class SPAPI:
         """For GET requests it is an empty string."""
         return hashlib.sha256((self.payload).encode('utf-8')).hexdigest()
 
-    def create_canonical_request(self):
+    def create_canonical_request(self) -> str:
         # http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
         # https://cloud.google.com/storage/docs/authentication/canonical-requests
 
