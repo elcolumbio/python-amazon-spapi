@@ -103,13 +103,10 @@ class StsTokenRequest(BaseSettings):
 
     def get_sts_creds(self) -> dict:
         sts_creds = self.request_sts_creds()
-        access_key = sts_creds['Credentials']['AccessKeyId']
-        secret_key = sts_creds['Credentials']['SecretAccessKey']
-        session_token = sts_creds['Credentials']['SessionToken']
         return {
-            'access_key': access_key,
-            'secret_key': secret_key,
-            'session_token': session_token
+            'access_key': sts_creds['Credentials']['AccessKeyId'],
+            'secret_key': sts_creds['Credentials']['SecretAccessKey'],
+            'session_token': sts_creds['Credentials']['SessionToken']
         }
 
     def set_sts_creds(self) -> None:
