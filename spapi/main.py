@@ -1,50 +1,40 @@
 import hashlib
 import hmac
 import datetime
-from pydantic import BaseModel, Field
 import requests
 
-
-class CredentialSetup(BaseModel):
-    """Interface Model with all credentials set."""
-    access_token: str = Field(
-        description='Can be set with setupapi.setter_access_token()')
-    access_key: str = Field(
-        description='Can be set with setupapi.setter_sts_creds()')
-    secret_key: str = Field(
-        description='Can be set with setupapi.setter_sts_creds()')
-    session_token: str = Field(
-        description='Can be set with setupapi.setter_sts_creds()')
-
-    endpoint: str
-    region: str
+from spapi import setup
 
 
-class SPAPI():
+class SPAPI:
     def __init__(
-        self, setup, path, http_verb='GET', querystring='', payload=''
+        self, access_token, stscreds, path, http_verb='GET',
+        querystring='', payload='', region=None
     ):
-        validate = CredentialSetup
-        validate(**setup.dict())  # We expect the credentials to be set.
+        self.access_token: str = access_token
+        self.stscreds: dict = stscreds
 
-        self.setup = setup
+        self.region: str = setup.Endpoints[region].value[1]
+        self.endpoint: str = setup.Endpoints[region].value[0]
+
         self.path: str = path
 
         self.set_datestrings()
 
         # api
         self.http_verb: str = http_verb
-        self.host: str = setup.endpoint.split('https://')[-1]
+        self.host: str = self.endpoint.split('https://')[-1]
         self.payload = payload
 
-        self.canonical_headers = f'host:{self.host}\nx-amz-date:{self.amzdate}\n'
+        self.canonical_headers = (
+            f'host:{self.host}\nx-amz-date:{self.amzdate}\n')
         self.canonical_request = None
         self.canonical_querystring: str = querystring
 
         self.service = 'execute-api'
         self.signed_headers = 'host;x-amz-date'
         self.algorithm = 'AWS4-HMAC-SHA256'
-        self.credential_scope = (f'{self.datestamp}/{self.setup.region}'
+        self.credential_scope = (f'{self.datestamp}/{self.region}'
                                  f'/{self.service}/aws4_request')
 
     def set_datestrings(self):
@@ -60,8 +50,9 @@ class SPAPI():
 
     def getSignatureKey(self):
         kDate = self.sign((
-            'AWS4' + self.setup.secret_key).encode('utf-8'), self.datestamp)
-        kRegion = self.sign(kDate, self.setup.region)
+            'AWS4' + self.stscreds['secret_key']).encode(
+                'utf-8'), self.datestamp)
+        kRegion = self.sign(kDate, self.region)
         kService = self.sign(kRegion, self.service)
         kSigning = self.sign(kService, 'aws4_request')
         return kSigning
@@ -106,19 +97,20 @@ class SPAPI():
         signature = self.create_string_to_sign()
         authorization_header = (
             f'{self.algorithm} '
-            f'Credential={self.setup.access_key}/{self.credential_scope}'
+            f"Credential={self.stscreds['access_key']}"
+            f'/{self.credential_scope}'
             f', SignedHeaders={self.signed_headers} Signature={signature}')
 
         headers = {'x-amz-date': self.amzdate,
                    'Authorization': authorization_header,
-                   'x-amz-access-token': self.setup.access_token,
-                   'x-amz-security-token': self.setup.session_token}
+                   'x-amz-access-token': self.access_token,
+                   'x-amz-security-token': self.stscreds['session_token']}
         return headers
 
     def get_request(self):
         headers = self.add_signing_to_request()
         request_url = (
-            self.setup.endpoint + self.path + self.canonical_querystring)
+            self.endpoint + self.path + self.canonical_querystring)
         r = requests.get(request_url, headers=headers)
         return r
 
