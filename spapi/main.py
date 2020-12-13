@@ -38,11 +38,16 @@ class SPAPI:
         self.credential_scope = (f'{self.datestamp}/{self.region}'
                                  f'/{self.service}/aws4_request')
 
+        self.create_canonical_request()
+        self.create_string_to_sign()
+        self.add_signing_to_request()
+        self.prepare_request()
+
     def set_datestrings(self):
         """Create a date for headers and the credential string."""
-        t = datetime.datetime.utcnow()
-        self.amzdate = t.strftime('%Y%m%dT%H%M%SZ')
-        self.datestamp = t.strftime('%Y%m%d')
+        now = datetime.datetime.utcnow()
+        self.amzdate = now.strftime('%Y%m%dT%H%M%SZ')
+        self.datestamp = now.strftime('%Y%m%d')
 
     def sign(self, key, msg) -> str:
         # https://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html
@@ -69,7 +74,7 @@ class SPAPI:
         canonical_request_components = [
             self.http_verb,
             self.path,
-            self.canonical_querystring,
+            self.canonical_querystring.strip('?'),
             self.canonical_headers,
             self.signed_headers,
             self.hash_payload()
@@ -108,18 +113,22 @@ class SPAPI:
                    'x-amz-security-token': self.stscreds['session_token']}
         return headers
 
-    def get_request(self):
-        headers = self.add_signing_to_request()
-        request_url = (
+    def prepare_request(self):
+        self.headers = self.add_signing_to_request()
+        self.request_url = (
             self.endpoint + self.path + self.canonical_querystring)
-        r = requests.get(request_url, headers=headers)
-        return r
+
+    def prepared_request(self):
+        req = requests.Request(
+            method='GET', headers=self.headers, url=self.request_url
+        )
+        return req
+
+    def make_request(self):
+        response = requests.get(self.request_url, headers=self.headers)
+        return response
 
     def main(self):
         """Main entry for queries."""
-
-        self.create_canonical_request()
-        self.create_string_to_sign()
-        self.add_signing_to_request()
-        response = self.get_request()
+        response = self.make_request()
         return response
